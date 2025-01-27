@@ -13,4 +13,3 @@ check_score <- function(state) {
   return(NA)  # no score - continue the drive
 }
 check_score
-
