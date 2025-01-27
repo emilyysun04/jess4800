@@ -1,1 +1,35 @@
 source("run_drive.R")
+
+run_epoch <- function(down, ytg, fp) {
+  team <- 1  # 1 for our team, -1 for opponent
+  state <- list(down = down, ytg = ytg, fp = fp)
+  
+  drive_count <- 0
+  max_drives <- 10  # Prevent infinite loops
+  
+  while (drive_count < max_drives) {
+    state <- run_drive(state)
+    
+    score <- check_score(state)
+    if (!is.na(score)) {
+      return(score * team)  # Adjust sign based on possession
+    }
+    
+    team <- -team  # Switch possession
+    drive_count <- drive_count + 1
+  }
+  
+  return(0)  # If max drives reached, return 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
