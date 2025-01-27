@@ -1,3 +1,4 @@
+# run_epoch.R
 source("run_drive.R")
 
 run_epoch <- function(down, ytg, fp) {
@@ -9,10 +10,12 @@ run_epoch <- function(down, ytg, fp) {
   
   while (drive_count < max_drives) {
     state <- run_drive(state)
+    score <- process_state(state) * team  # Apply team sign adjustment
     
-    score <- check_score(state)
+    print(paste("The result of the drive was", state$fp, "and the score assigned was", ifelse(is.na(score), 0, score)))
+    
     if (!is.na(score)) {
-      return(score * team)  # Adjust sign based on possession
+      return(score)  # Return adjusted score
     }
     
     team <- -team  # Switch possession
