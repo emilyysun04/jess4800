@@ -1,6 +1,7 @@
 #run drive simulates how far the ball moves on a drive
 run_drive <- function(fp) {
   #picks random num from -10 to 50 to simulate the yardage gain/loss for each drive
+  #this distribution will allow for instances where there will sometimes be a score and sometimes there will not be 
   yardage_gained <- sample(-10:50, 1)
   #compute the new field position after the drive
   #min -> makes sure field position doesn't exceed 120
