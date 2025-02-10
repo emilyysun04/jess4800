@@ -1,7 +1,12 @@
+source("run_play.R")
+
 run_drive <- function(down, ytg, fp) {
+  drive_state <- list(down=down, ytg=ytg, fp=fp, exit_drive=0)
   
-  new_fp <- sample(c(80, 105, 115), 1, prob=c(.9, .05, .05))
+  while (drive_state$exit_drive == 0) {
+    run_play(drive_state)
+  }
   
-  list(down=1, ytg=10, fp=new_fp)
+  return(list(down=drive_state$down, ytg=drive_state$ytg, fp=drive_state$fp))
 }
 
