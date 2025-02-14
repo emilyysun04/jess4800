@@ -1,117 +1,96 @@
-library(tidyverse)
+# Sample yards gained function
+# This function simulates the number of yards gained on a play. 
+# It samples a value between -5 (loss of 5 yards) and 20 (gain of 20 yards), 
+# with probabilities favoring small gains and fewer large losses.
+sample_yards_gained <- function() { 
+  sample(-5:20, 1, prob = c(rep(0.05, 5), rep(0.9 / 20, 20)))
+}
 
-pbp_data <- readRDS("pbp2014-2024.rds")
-colnames(pbp_data)
-
-#determining which down func to call
-run_play <- function(D, YTG, yardline_100) {
-  if (D == 1) {
-    return(down_one(YTG, yardline_100))
-  } else if (D == 2) {
-    return(down_two(YTG, yardline_100))
-  } else if (D == 3) {
-    return(down_three(YTG, yardline_100))
-  } else {
-    return(down_four(YTG, yardline_100))
+# Function to decide what to do on 4th down based on field position (FP) and yards to go (YTG)
+# FP: current field position
+# YTG: yards to go for a first down
+fourth_down_decision <- function(FP, YTG) {
+  if (FP > 60) { # Close to the opponent's end zone
+    if (YTG < 2) { # Short distance for a first down
+      sample(c("go for it", "field goal"), 1, prob = c(0.7, 0.3))
+    } else { 
+      "field goal" # Kick a field goal if more than 2 yards to go
+    }
+  } else if (FP > 30) { # Midfield range
+    sample(c("punt", "go for it"), 1, prob = c(0.8, 0.2)) # Punt is more likely
+  } else { 
+    "punt" # Far from the opponent's end zone, punt is the safest choice
   }
 }
 
-#filter first down from dataset + randomly sample one
-down_one <- function(YTG, yardline_100) {
-  play <- pbp_data %>%
-    filter(down == 1) %>%
-    sample_n(1)
+# Helper function to update the drive state after each play
+# Inputs:
+# - D: current down (1st, 2nd, 3rd, or 4th)
+# - YTG: yards to go for a first down
+# - FP: current field position
+# - YG: yards gained on the play
+# Returns: Updated drive state
+update_drive_state <- function(D, YTG, FP, YG) {
+  new_YTG <- max(YTG - YG, 0) # Calculate the new YTG, ensuring it doesn't drop below 0
+  new_FP <- FP + YG           # Update the field position
   
-  YG <- play$yards_gained
-  #calculate new FP
-  new_yardline <- max(0, yardline_100 - YG) 
-  new_YTG <- max(10 - YG, 1)  
-  #if they got the first, reset to first, else move to second
-  new_D <- ifelse(YG >= YTG, 1, 2)  
-  
-  return(list(D = new_D, YTG = new_YTG, yardline_100 = new_yardline, exit_drive = 0))
+  if (new_YTG == 0) { # First down achieved
+    list(D = 1, YTG = 10, FP = new_FP, exit_drive = 0) # Reset to 1st down with 10 yards to go
+  } else { 
+    list(D = D + 1, YTG = new_YTG, FP = new_FP, exit_drive = 0) # Move to the next down
+  }
 }
 
-
-#second down
-down_two <- function(YTG, yardline_100) {
-  play <- pbp_data %>%
-    filter(down == 2) %>%
-    sample_n(1)
-  
-  YG <- play$yards_gained
-  new_yardline <- max(0, yardline_100 - YG)
-  new_YTG <- max(10 - YG, 1)
-  new_D <- ifelse(YG >= YTG, 1, 3)
-  
-  return(list(D = new_D, YTG = new_YTG, yardline_100 = new_yardline, exit_drive = 0))
+# Down-specific functions: each simulates a play and updates the drive state
+down_one <- function(state) {
+  YG <- sample_yards_gained() # Simulate yards gained
+  update_drive_state(state$D, state$YTG, state$FP, YG) # Update the drive state
 }
 
-
-#third down
-down_three <- function(YTG, yardline_100) {
-  play <- pbp_data %>%
-    filter(down == 3) %>%
-    sample_n(1)
-  
-  YG <- play$yards_gained
-  new_yardline <- max(0, yardline_100 - YG)
-  new_YTG <- max(10 - YG, 1)
-  new_D <- ifelse(YG >= YTG, 1, 4)
-  
-  return(list(D = new_D, YTG = new_YTG, yardline_100 = new_yardline, exit_drive = 0))
+down_two <- function(state) {
+  YG <- sample_yards_gained()
+  update_drive_state(state$D, state$YTG, state$FP, YG)
 }
 
+down_three <- function(state) {
+  YG <- sample_yards_gained()
+  update_drive_state(state$D, state$YTG, state$FP, YG)
+}
 
-down_four <- function(YTG, yardline_100) {
-  #looking at probabilities btwn punt, kick, go for it
-  decision_probs <- pbp_data %>%
-    filter(down == 4) %>%
-    group_by(play_type) %>%
-    summarize(count = n()) %>%
-    mutate(prob = count / sum(count))
+# Fourth down function handles decisions for going for it, punting, or attempting a field goal
+down_four <- function(state) {
+  decision <- fourth_down_decision(state$FP, state$YTG)
   
-  decision <- sample(decision_probs$play_type, 1, prob = decision_probs$prob)
-  
-  if (decision == "punt") {
-    punt_distance <- pbp_data %>%
-      filter(play_type == "punt") %>%
-      pull(yards_gained) %>%
-      sample(1)
-    
-    new_yardline <- max(0, yardline_100 - punt_distance)
-    return(list(D = 1, YTG = 10, yardline_100 = new_yardline, exit_drive = 1))
-  } 
- 
-  #the success rate would depend on FP 
-  else if (decision == "field_goal") {
-    success_prob <- ifelse(yardline_100 < 40, 0.9, ifelse(yardline_100 < 55, 0.7, 0.3))
-    success <- runif(1) < success_prob
-    
-    if (success) {
-      return(list(D = 1, YTG = 10, yardline_100 = 115, exit_drive = 1))  # Made FG
+  if (decision == "go for it") {
+    YG <- sample_yards_gained()
+    if (state$YTG - YG <= 0) { # Successful conversion
+      update_drive_state(state$D, state$YTG, state$FP, YG)
+    } else { # Turnover on downs
+      list(D = state$D, YTG = state$YTG, FP = state$FP, exit_drive = 1)
+    }
+  } else if (decision == "punt") {
+    new_FP <- state$FP - sample(30:50, 1) # Punt moves the ball back 30-50 yards
+    list(D = 1, YTG = 10, FP = new_FP, exit_drive = 1)
+  } else { # Field goal attempt
+    fg_success <- sample(c(TRUE, FALSE), 1, prob = c(0.75, 0.25)) # 75% chance of success
+    if (fg_success) {
+      list(D = 1, YTG = 10, FP = 115, exit_drive = 1) # Made field goal (FP 115 indicates score)
     } else {
-      return(list(D = 1, YTG = 10, yardline_100 = yardline_100, exit_drive = 1))  # Missed FG
+      list(D = 1, YTG = 10, FP = state$FP, exit_drive = 1) # Missed field goal
     }
-  } 
- 
-  #using the dataset to simulate the play 
-  else {  # "Go for it"
-    play <- pbp_data %>%
-      filter(down == 4) %>%
-      sample_n(1)
-    
-    YG <- play$yards_gained
-    new_yardline <- max(0, yardline_100 - YG)
-    new_YTG <- max(10 - YG, 1)
-    new_D <- ifelse(YG >= YTG, 1, 2)
-    
-    if (YG < YTG) {
-      return(list(D = 1, YTG = 10, yardline_100 = yardline_100, exit_drive = 1))  # Turnover
-    }
-    
-    return(list(D = new_D, YTG = new_YTG, yardline_100 = new_yardline, exit_drive = 0))
   }
 }
 
-
+# Main function to run a play based on the current down number
+# Calls the appropriate down function
+run_play <- function(state) {
+  if (state$D == 1) {
+    down_one(state)
+  } else if (state$D == 2) {
+    down_two(state)
+  } else if (state$D == 3) {
+    down_three(state)
+  } else {
+    down_four(state)
+  }
+}
