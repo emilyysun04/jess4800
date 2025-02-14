@@ -3,8 +3,9 @@
 # It samples a value between -5 (loss of 5 yards) and 20 (gain of 20 yards), 
 # with probabilities favoring small gains and fewer large losses.
 sample_yards_gained <- function() { 
-  sample(-5:20, 1, prob = c(rep(0.05, 5), rep(0.9 / 20, 20)))
+  sample(-5:20, 1, prob = c(rep(0.05, 5), rep(0.9 / 21, 21)))
 }
+
 
 # Function to decide what to do on 4th down based on field position (FP) and yards to go (YTG)
 # FP: current field position
@@ -94,3 +95,4 @@ run_play <- function(state) {
     down_four(state)
   }
 }
+
