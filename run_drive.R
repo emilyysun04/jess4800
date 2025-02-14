@@ -10,3 +10,4 @@ run_drive <- function(down, ytg, fp) {
   return(list(down = drive_state$D, ytg = drive_state$YTG, fp = drive_state$FP))
 }
 
+run_drive(1,8,20)
