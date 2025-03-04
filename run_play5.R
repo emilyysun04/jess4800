@@ -5,12 +5,10 @@ library(nnet)
 # Sample yards gained function
 library(nnet)
 
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
 sample_yards_gained <- function() { 
   sample(-5:20, 1, prob = c(rep(0.05, 5), rep(0.9 / 21, 21)))
 }
 
-<<<<<<< HEAD
 # Simulated data for multinomial regression model (fourth-down decision)
 set.seed(123)
 decision_data <- data.frame(
@@ -24,7 +22,6 @@ decision_data <- data.frame(
 multinom_model <- multinom(Decision ~ FP + YTG, data = decision_data)
 
 # Fit logistic regression model for field goal probability
-=======
 #data for multinomial regression model, fourth down decision
 set.seed(123)
 decision_data <- data.frame(
@@ -38,29 +35,25 @@ decision_data <- data.frame(
 multinom_model <- multinom(Decision ~ FP + YTG, data = decision_data)
 
 #fit model for fg prob 
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
 fg_data <- data.frame(
   FP = sample(20:60, 200, replace = TRUE),
   Success = rbinom(200, 1, prob = plogis((sample(20:60, 200, replace = TRUE) - 37) / 5))
 )
 fg_model <- glm(Success ~ FP, data = fg_data, family = binomial)
 
-<<<<<<< HEAD
 # Function to decide what to do on 4th down using the multinomial regression model
-=======
 #4th down decision using multinomial regression model
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
+
 fourth_down_decision <- function(FP, YTG) {
   decision_probs <- predict(multinom_model, newdata = data.frame(FP = FP, YTG = YTG), type = "probs")
   decision <- sample(c("go for it", "punt", "field goal"), 1, prob = decision_probs)
   return(decision)
 }
 
-<<<<<<< HEAD
 # Helper function to update the drive state after each play
-=======
+
 #update drive state after each play
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
+
 update_drive_state <- function(D, YTG, FP, YG) {
   new_YTG <- max(YTG - YG, 0)
   new_FP <- FP + YG
@@ -72,11 +65,11 @@ update_drive_state <- function(D, YTG, FP, YG) {
   }
 }
 
-<<<<<<< HEAD
+
 # Down-specific functions
-=======
+
 #down-specific functions
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
+
 down_one <- function(state) {
   YG <- sample_yards_gained()
   update_drive_state(state$D, state$YTG, state$FP, YG)
@@ -92,11 +85,9 @@ down_three <- function(state) {
   update_drive_state(state$D, state$YTG, state$FP, YG)
 }
 
-<<<<<<< HEAD
 # Fourth down function using multinomial regression for decision-making
-=======
+
 #fourth down func for multinomial regression
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
 down_four <- function(state) {
   decision <- fourth_down_decision(state$FP, state$YTG)
   
@@ -122,11 +113,9 @@ down_four <- function(state) {
   }
 }
 
-<<<<<<< HEAD
 # Main function to run a play based on the current down number
-=======
 #main func to run a play based on the current down
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
+
 run_play <- function(state) {
   if (state$D == 1) {
     down_one(state)
@@ -138,7 +127,4 @@ run_play <- function(state) {
     down_four(state)
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> 56ab312077fb1c11896d208a1c31cfd8b0e501b2
