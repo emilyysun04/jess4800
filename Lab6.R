@@ -46,29 +46,35 @@ summary(poisson_1)
 #defining regions of ice based on x and y coordinates; dividing the ice into 
 #six zones -- left, center, right in offensive/defensive areas
 
-# Task 2: Shot Rate Model (Poisson Regression) with Spatial Location
-# defining regions of ice based on x and y coordinates; dividing the ice into 
-# six zones -- left, center, right in offesnsive/defensive areas
-# Load required libraries
-df2 <- nhl_data %>% 
+# Filter only shot attempts (SHOT or GOAL)
+df2 <- nhl_data %>%
+  filter(Event %in% c("SHOT", "GOAL")) %>%
   mutate(
-    x_zone = case_when(
-      xC < -25 ~ "Left",      # left side of the ice
-      xC > 25 ~ "Right",      # right side of the ice
-      TRUE ~ "Center"          # center of the ice
+    zone = case_when(
+      xC < -25 ~ "Defensive",
+      xC > 25 ~ "Offensive",
+      TRUE ~ "Neutral"
     ),
-    y_zone = case_when(
-      yC < -20 ~ "Low",       # lower part of the ice (near goal line)
-      yC > 20 ~ "High",       # upper part of the ice (near blue line)
-      TRUE ~ "Middle"          # middle section
+    lateral_zone = case_when(
+      yC < -20 ~ "Left",
+      yC > 20 ~ "Right",
+      TRUE ~ "Center"
     ),
-    shot_region = paste(x_zone, y_zone, sep = "_")  # combine x and y zones into a region label
+    shot_region = paste(zone, lateral_zone, sep = "_")  # Combine zones
   )
 
-# fit Poisson regression model with shot regions as categorical predictors
-shot_model_space <- glm(shot_indicator ~ shot_region, 
-                        data = df2, family = poisson)
+# Aggregate data: Count number of shots in each shot_region
+shot_counts_space <- df2 %>%
+  group_by(shot_region) %>%
+  summarise(Shot_Count = n(), .groups = "drop")
+
+# Fit Poisson regression model
+shot_model_space <- glm(Shot_Count ~ shot_region, 
+                        data = shot_counts_space, 
+                        family = poisson)
+
 summary(shot_model_space)
+
 
 #task 3: Logistic Regression for Shot Success (On Goal vs Missed)
 #define a binary outcome variable indicating shot success
